@@ -1,0 +1,7 @@
+{
+  "name": "cartoquiz",
+  "devDependencies": {
+    "maplibre-gl": "^4.7.1",
+    "protomaps-themes-base": "^4.3.0"
+  }
+}
