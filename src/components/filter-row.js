@@ -1,14 +1,14 @@
-import { REMOVE_SYMBOL, repopulateOptions, setSelectValue } from '../utils/misc.js';
+import { REMOVE_SYMBOL } from '../constants.js';
+import { repopulateOptions, setSelectValue } from '../utils/misc.js';
 
 /**
- * @typedef {{ key?: string, value?: any }} Filter
- * @typedef {{ [key: string]: any[] }} PropertyValues
+ * @import { Filter, PropertyValues } from '../types.js'
  */
 
 export default class FilterRowComponent extends HTMLElement {
   /** @type {Filter} */
   #filter = {};
-  /** @type {{ [key: string]: any[] }} */
+  /** @type {PropertyValues} */
   propertyValues;
   /** @type {HTMLSelectElement} */
   keySelect;

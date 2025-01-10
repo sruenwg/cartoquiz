@@ -1,7 +1,8 @@
-import { COLLAPSED_ARROW, EXPANDED_ARROW, removeAllChildren } from '../utils/misc.js';
+import { COLLAPSED_ARROW, EXPANDED_ARROW } from '../constants.js';
+import { removeAllChildren } from '../utils/misc.js';
 
 /**
- * @typedef {import('../services/quiz-state.js').default} QuizState
+ * @import QuizState from '../services/quiz-state.js'
  */
 
 export default class GuessedPaneComponent extends HTMLElement {

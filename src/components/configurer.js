@@ -1,5 +1,9 @@
 import { collectKeyValues, repopulateOptions } from '../utils/misc.js';
 
+/**
+ * @import { PropertyValues } from '../types.js'
+ */
+
 export default class ConfigurerComponent extends HTMLElement {
   /** @type {HTMLSelectElement} */
   matchPropertySelect;
@@ -12,7 +16,7 @@ export default class ConfigurerComponent extends HTMLElement {
   attribution;
   /** @type {GeoJSON.Feature[]} */
   features = [];
-  /** @type {{ [key: string]: any[] }} */
+  /** @type {PropertyValues} */
   collectedPropertyValues = {};
 
   get isValidDataLoaded() {

@@ -1,4 +1,6 @@
-/** @typedef { import('../services/view-state.js').default } ViewState */
+/**
+ * @import ViewState from '../services/view-state.js'
+ */
 
 const closeIcon = `<span class="material-symbols-rounded">close</span>`;
 const settingsIcon = `<span class="material-symbols-rounded">settings</span>`;

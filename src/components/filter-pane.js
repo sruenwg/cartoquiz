@@ -1,9 +1,9 @@
-import { ADD_SYMBOL, COLLAPSED_ARROW, EXPANDED_ARROW } from '../utils/misc.js';
+import { ADD_SYMBOL, COLLAPSED_ARROW, EXPANDED_ARROW } from '../constants.js';
 
 /**
- * @typedef {import('../services/quiz-state.js').default} QuizState
- * @typedef {{ key?: string, value?: any }} Filter
- * @typedef {import('./filter-row.js').default} FilterRowComponent
+ * @import QuizState from '../services/quiz-state.js'
+ * @import { Filter, PropertyValues } from '../types.js'
+ * @import FilterRowComponent from './filter-row.js'
  */
 
 export default class FilterPaneComponent extends HTMLElement {
@@ -72,7 +72,7 @@ export default class FilterPaneComponent extends HTMLElement {
 
   /**
    * @param {Filter} filter
-   * @param {{ [key: string]: any[] }} propertyValues
+   * @param {PropertyValues} propertyValues
    */
   addFilter(filter, propertyValues) {
     /** @type {FilterRowComponent} */

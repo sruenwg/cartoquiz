@@ -8,8 +8,8 @@ import {
 } from '../utils/map-utils.js';
 
 /**
- * @typedef {import('../services/quiz-state.js').default} QuizState
- * @typedef {import('../services/view-state.js').default} ViewState
+ * @import QuizState from '../services/quiz-state.js'
+ * @import ViewState from '../services/view-state.js'
  */
 
 const STATIC_ATTRIBUTIONS = [

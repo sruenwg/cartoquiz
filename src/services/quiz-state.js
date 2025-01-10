@@ -3,8 +3,7 @@ import { normalizeString, omitKeys } from '../utils/misc.js';
 import { getFeatureId, setFeatureId } from '../utils/map-utils.js';
 
 /**
- * @typedef {number} FeatureId
- * @typedef {{ key?: string, value?: any }} Filter
+ * @import { FeatureId, Filter, PropertyValues } from '../types.js'
  */
 
 export default class QuizState extends PubSub {
@@ -30,7 +29,7 @@ export default class QuizState extends PubSub {
 
   /**
    * An object containing all values in the dataset for each property key.
-   * @type {{ [key: string]: any[] }}
+   * @type {PropertyValues}
    */
   #collectedPropertyValues = {};
 
@@ -146,7 +145,7 @@ export default class QuizState extends PubSub {
    * @param {GeoJSON.Feature[]} features
    * @param {string} attribution
    * @param {string} matchProperty
-   * @param {{ [key: string]: any[] }} collectedPropertyValues
+   * @param {PropertyValues} collectedPropertyValues
    */
   startQuiz(features, attribution, matchProperty, collectedPropertyValues) {
     this.#features = features.reduce((acc, feature, i) => {

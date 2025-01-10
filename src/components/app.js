@@ -1,6 +1,13 @@
 import QuizState from '../services/quiz-state.js';
 import ViewState from '../services/view-state.js';
 
+/**
+ * @import ConfigurerComponent from './configurer.js'
+ * @import MapComponent from './map.js'
+ * @import QuizPanesComponent from './quiz-panes.js'
+ * @import ViewToggleComponent from './view-toggle.js'
+ */
+
 export default class AppComponent extends HTMLElement {
   /** @type {QuizState} */
   quizState;
@@ -14,17 +21,17 @@ export default class AppComponent extends HTMLElement {
   overlayDiv;
   /**
    * Form to configure quiz
-   * @type {import('./configurer.js').default}
+   * @type {ConfigurerComponent}
    */
   configurer;
   /**
    * Panes floating above map during quiz
-   * @type {import('./quiz-panes.js').default}
+   * @type {QuizPanesComponent}
    */
   quizPanes;
-  /** @type {import('./map.js').default} */
+  /** @type {MapComponent} */
   map;
-  /** @type {import('./view-toggle.js').default} */
+  /** @type {ViewToggleComponent} */
   viewToggle;
 
   connectedCallback() {

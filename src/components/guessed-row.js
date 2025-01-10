@@ -1,8 +1,8 @@
 import { getFeatureId } from '../utils/map-utils.js';
 
 /**
- * @typedef {number} FeatureId
- * @typedef {import('../services/quiz-state.js').default} QuizState
+ * @import QuizState from '../services/quiz-state.js'
+ * @import { FeatureId } from '../types.js'
  */
 
 export default class GuessedRowComponent extends HTMLElement {

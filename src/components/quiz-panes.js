@@ -1,5 +1,7 @@
 /**
- * @typedef {import('../services/quiz-state.js').default} QuizState
+ * @import QuizState from '../services/quiz-state.js'
+ * @import FilterPaneComponent from './filter-pane.js'
+ * @import GuessedPaneComponent from './guessed-pane.js'
  */
 
 export default class QuizPanesComponent extends HTMLElement {
@@ -8,9 +10,9 @@ export default class QuizPanesComponent extends HTMLElement {
 
   /** @type {HTMLInputElement} */
   guessInput;
-  /** @type {import('./filter-pane.js').default} */
+  /** @type {FilterPaneComponent} */
   filterPane;
-  /** @type {import('./guessed-pane.js').default} */
+  /** @type {GuessedPaneComponent} */
   guessedPane;
 
   /**

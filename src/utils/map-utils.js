@@ -3,7 +3,7 @@ import polylabel from 'polylabel';
 import * as topojson from 'topojson-client';
 
 /**
- * @typedef {number} FeatureId
+ * @import { FeatureId } from '../types.js'
  */
 
 const MIN_LNG = -180;
@@ -60,29 +60,29 @@ export function parseFeaturesAndAttribution(textData) {
 
 /**
  * Naively checks if the given object is a `TopoJSON.Topology`.
- * @param {any} object
- * @returns {object is TopoJSON.Topology}
+ * @param {any} obj
+ * @returns {obj is TopoJSON.Topology}
  */
-function isTopology(object) {
-  return object?.type === 'Topology';
+function isTopology(obj) {
+  return obj?.type === 'Topology';
 }
 
 /**
  * Naively checks if the given object is a `GeoJSON.FeatureCollection`.
- * @param {any} object
- * @returns {object is GeoJSON.FeatureCollection}
+ * @param {any} obj
+ * @returns {obj is GeoJSON.FeatureCollection}
  */
-function isFeatureCollection(object) {
-  return object?.type === 'FeatureCollection';
+function isFeatureCollection(obj) {
+  return obj?.type === 'FeatureCollection';
 }
 
 /**
  * Naively checks if the given object is a `GeoJSON.Feature`.
- * @param {any} object
- * @returns {object is GeoJSON.Feature}
+ * @param {any} obj
+ * @returns {obj is GeoJSON.Feature}
  */
-function isFeature(object) {
-  return object?.type === 'Feature';
+function isFeature(obj) {
+  return obj?.type === 'Feature';
 }
 
 /**

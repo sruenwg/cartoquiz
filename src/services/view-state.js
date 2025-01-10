@@ -1,6 +1,8 @@
 import PubSub from '../utils/pub-sub.js';
 
-/** @typedef {'configurer' | 'quiz'} AppView */
+/**
+ * @typedef {'configurer' | 'quiz'} AppView
+ */
 
 export default class ViewState extends PubSub {
   /** @type {AppView} */
