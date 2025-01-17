@@ -1,10 +1,21 @@
+import { setFeatureIds } from '../utils/map-utils.js';
 import { collectKeyValues, repopulateOptions } from '../utils/misc.js';
 
 /**
- * @import { PropertyValues } from '../types.js'
+ * @import DatabaseService from '../services/db.js'
+ * @import QuizState from '../services/quiz-state.js'
+ * @import ViewState from '../services/view-state.js'
+ * @import { PropertyValues, QuizInfo } from '../types.js'
  */
 
 export default class ConfigurerComponent extends HTMLElement {
+  /** @type {DatabaseService} */
+  databaseService;
+  /** @type {QuizState} */
+  quizState;
+  /** @type {ViewState} */
+  viewState;
+
   /** @type {HTMLSelectElement} */
   matchPropertySelect;
   /** @type {HTMLButtonElement} */
@@ -23,6 +34,17 @@ export default class ConfigurerComponent extends HTMLElement {
     return this.dataSource !== undefined;
   }
 
+  /**
+   * @param {DatabaseService} databaseService
+   * @param {QuizState} quizState
+   * @param {ViewState} viewState
+   */
+  init(databaseService, quizState, viewState) {
+    this.databaseService = databaseService;
+    this.quizState = quizState;
+    this.viewState = viewState;
+  }
+
   connectedCallback() {
     this.classList.add('configurer');
     this.render();
@@ -31,18 +53,33 @@ export default class ConfigurerComponent extends HTMLElement {
   render() {
     this.innerHTML = `
       <h1 class="configurer__app-title">Cartoquiz</h1>
-      <div class="configurer__section">
-        <div class="configurer__section-label">Load data source (GeoJSON or TopoJSON):</div>
-        <cq-data-loader></cq-data-loader>
+      <div class="configurer__options">
+        <div class="configurer__option">
+          <h3 class="configurer__option-heading">
+            Create new quiz
+          </h3>
+          <div class="configurer__control-group">
+            <div class="configurer__control-group-label">
+              Load data source (GeoJSON or TopoJSON):
+            </div>
+            <cq-data-loader></cq-data-loader>
+          </div>
+          <div class="configurer__control-group">
+            <label for="match-property-select" class="configurer__control-group-label">
+              Quiz on data property:
+            </label>
+            <select id="match-property-select" required disabled>
+              <option value="" selected>Select property name</option>
+            </select>
+          </div>
+          <button id="start-quiz-button" type="button" class="start-quiz-button" disabled>Start</button>
+        </div>
       </div>
-      <div class="configurer__section">
-        <label for="match-property-select" class="configurer__section-label">Quiz on data property:</label>
-        <select id="match-property-select" required disabled>
-          <option value="" selected>Select property name</option>
-        </select>
-      </div>
-      <button id="start-quiz-button" type="button" class="start-quiz-button" disabled>Start new quiz</button>
     `;
+
+    if (!this.quizState.started) {
+      this.showResumeQuizOption();
+    }
 
     const dataLoader = this.querySelector('cq-data-loader');
     this.matchPropertySelect = this.querySelector('#match-property-select');
@@ -51,6 +88,7 @@ export default class ConfigurerComponent extends HTMLElement {
     dataLoader.addEventListener('dataUpdate', (event) => {
       this.dataSource = event.detail.dataSource;
       this.features = event.detail.data?.features ?? [];
+      setFeatureIds(this.features);
       this.attribution = event.detail.data?.attribution;
       this.updateMatchPropertySelect();
       this.updateStartButton();
@@ -73,15 +111,17 @@ export default class ConfigurerComponent extends HTMLElement {
       );
     };
 
-    this.startQuizButton.onclick = () => {
-      const payload = {
+    this.startQuizButton.onclick = async () => {
+      /** @type {QuizInfo} */
+      const quizInfo = {
         dataSource: this.dataSource,
         features: this.features,
         attribution: this.attribution,
         collectedPropertyValues: this.collectedPropertyValues,
         matchProperty: this.matchPropertySelect.value,
       };
-      this.dispatchEvent(new CustomEvent('start', { detail: payload }));
+      await this.quizState.startNewQuiz(quizInfo);
+      this.viewState.view = 'quiz';
     };
   }
 
@@ -99,5 +139,81 @@ export default class ConfigurerComponent extends HTMLElement {
   updateStartButton() {
     this.startQuizButton.disabled = !this.isValidDataLoaded
       || this.matchPropertySelect.value === '';
+  }
+
+  showResumeQuizOption() {
+    const options = this.querySelector('.configurer__options');
+
+    const divider = document.createElement('div');
+    divider.classList.add('configurer__options-divider');
+    divider.textContent = 'or';
+
+    const resumeQuizOption = document.createElement('div');
+    resumeQuizOption.classList.add('configurer__option');
+    resumeQuizOption.innerHTML = `
+      <h3 class="configurer__option-heading">
+        Resume in-progress quiz
+      </h3>
+      <div class="configurer__resume-quiz-info">
+        <span class="configurer__resume-quiz-loading-text">
+          Checking for existing quiz in progress…
+        </span>
+      </div>
+      <button id="resume-quiz-button" type="button" disabled>Resume</button>
+    `;
+
+    options.append(divider, resumeQuizOption);
+
+    const resumeQuizInfo = resumeQuizOption
+      .querySelector('.configurer__resume-quiz-info');
+    const resumeQuizLoadingText = resumeQuizOption
+      .querySelector('.configurer__resume-quiz-loading-text');
+    const resumeQuizButton = resumeQuizOption
+      .querySelector('#resume-quiz-button');
+
+    resumeQuizButton.onclick = async () => {
+      await this.quizState.resumeExistingQuiz();
+      this.viewState.view = 'quiz';
+    };
+
+    this.databaseService.getQuizOverview()
+      .then((overview) => {
+        resumeQuizLoadingText.remove();
+        const existsQuiz = overview.dataSource !== undefined;
+        if (existsQuiz) {
+          resumeQuizInfo.innerHTML = `
+            <div class="configurer__resume-quiz-overview-entry">
+              <div class="configurer__resume-quiz-overview-key">
+                Data source:
+              </div>
+              <div class="configurer__resume-quiz-overview-value">
+                ${overview.dataSource}
+              </div>
+            </div>
+            <div class="configurer__resume-quiz-overview-entry">
+              <div class="configurer__resume-quiz-overview-key">
+                Quiz property:
+              </div>
+              <div class="configurer__resume-quiz-overview-value--monospaced">
+                ${overview.matchProperty}
+              </div>
+            </div>
+            <div class="configurer__resume-quiz-overview-entry">
+              <div class="configurer__resume-quiz-overview-key">
+                Guessed:
+              </div>
+              <div class="configurer__resume-quiz-overview-value">
+                ${overview.numGuessed} / ${overview.numFeatures}
+              </div>
+            </div>
+          `;
+          resumeQuizButton.disabled = false;
+        } else { // !existsQuiz
+          const resumeQuizNotFoundText = document.createElement('span');
+          resumeQuizNotFoundText.classList.add('configurer__resume-quiz-not-found-text');
+          resumeQuizNotFoundText.textContent = 'No quiz started yet.';
+          resumeQuizInfo.append(resumeQuizNotFoundText);
+        }
+      });
   }
 }

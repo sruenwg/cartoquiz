@@ -1,12 +1,23 @@
-import PubSub from '../utils/pub-sub.js';
-import { normalizeString, omitKeys } from '../utils/misc.js';
 import { getFeatureId, setFeatureId } from '../utils/map-utils.js';
+import { normalizeString, omitKeys } from '../utils/misc.js';
+import PubSub from '../utils/pub-sub.js';
 
 /**
- * @import { FeatureId, Filter, PropertyValues } from '../types.js'
+ * @import DatabaseService from '../services/db.js'
+ * @import { FeatureId, Filter, PropertyValues, QuizInfo } from '../types.js'
  */
 
 export default class QuizState extends PubSub {
+  /**
+   * @type {DatabaseService}
+   */
+  #databaseService;
+
+  /**
+   * Whether the quiz has been started.
+   */
+  #started = false;
+
   /**
    * The feature properties key on which the user is quizzed.
    * For example, `matchProperty === 'name'` would require the user to guess
@@ -56,6 +67,10 @@ export default class QuizState extends PubSub {
    * @type {FeatureId}
    */
   #highlightedId;
+
+  get started() {
+    return this.#started;
+  }
 
   get matchProperty() {
     return this.#matchProperty;
@@ -128,6 +143,14 @@ export default class QuizState extends PubSub {
   }
 
   /**
+   * @param {DatabaseService} databaseService
+   */
+  constructor(databaseService) {
+    super();
+    this.#databaseService = databaseService;
+  }
+
+  /**
    * @param {FeatureId} featureId
    */
   getFeatureById(featureId) {
@@ -141,26 +164,19 @@ export default class QuizState extends PubSub {
     return feature.properties[this.#matchProperty];
   }
 
+  async resumeExistingQuiz() {
+    const { quizInfo, guessedIds } = await this.#databaseService.getStoredData();
+    if (quizInfo !== undefined) {
+      this.#startQuiz(quizInfo, guessedIds);
+    }
+  }
+
   /**
-   * @param {GeoJSON.Feature[]} features
-   * @param {string} attribution
-   * @param {string} matchProperty
-   * @param {PropertyValues} collectedPropertyValues
+   * @param {QuizInfo} quizInfo
    */
-  startQuiz(features, attribution, matchProperty, collectedPropertyValues) {
-    this.#features = features.reduce((acc, feature, i) => {
-      feature = setFeatureId(feature, i);
-      acc.set(i, feature);
-      return acc;
-    }, new Map());
-    this.#dataAttribution = attribution;
-    this.#matchProperty = matchProperty;
-    this.#collectedPropertyValues = collectedPropertyValues;
-    this.#filters = [];
-    this.#guessedIds = [];
-    this.#lastGuessedIds = [];
-    this.#highlightedId = undefined;
-    this.publish('quizStart');
+  async startNewQuiz(quizInfo) {
+    await this.#databaseService.setQuizInfo(quizInfo);
+    this.#startQuiz(quizInfo, []);
   }
 
   /**
@@ -173,9 +189,36 @@ export default class QuizState extends PubSub {
       const prevMatches = this.#lastGuessedIds.map((id) => this.#features.get(id));
       const newlyGuessedIds = newMatches.map((feat) => getFeatureId(feat));
       this.#lastGuessedIds = newlyGuessedIds;
-      this.#guessedIds.push(...newlyGuessedIds);
+      this.#addGuessedIds(newlyGuessedIds);
       this.publish('matchesUpdate', { prevMatches, newMatches });
     }
+  }
+
+  /**
+   * @param {QuizInfo} quizInfo
+   * @param {FeatureId[]} guessedIds
+   */
+  #startQuiz(quizInfo, guessedIds) {
+    this.#features = new Map(
+      quizInfo.features.map((feature) => [feature.id, feature]),
+    );
+    this.#dataAttribution = quizInfo.attribution;
+    this.#matchProperty = quizInfo.matchProperty;
+    this.#collectedPropertyValues = quizInfo.collectedPropertyValues;
+    this.#filters = [];
+    this.#guessedIds = guessedIds;
+    this.#lastGuessedIds = [];
+    this.#highlightedId = undefined;
+    this.#started = true;
+    this.publish('quizStart');
+  }
+
+  /**
+   * @param {FeatureId[]} ids
+   */
+  async #addGuessedIds(ids) {
+    this.#guessedIds.push(...ids);
+    await this.#databaseService.addGuessedIds(ids);
   }
 
   /**

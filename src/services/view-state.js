@@ -20,13 +20,11 @@ export default class ViewState extends PubSub {
   }
 
   /**
-   * @param {AppView} initialValue
+   * @param {AppView} initialView
    */
-  constructor(initialValue = 'configurer') {
+  constructor(initialView = 'configurer') {
     super();
 
-    if (initialValue === 'configurer' | initialValue === 'quiz') {
-      this.#view = initialValue;
-    }
+    this.#view = initialView;
   }
 }

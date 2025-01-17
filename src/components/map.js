@@ -54,7 +54,8 @@ export default class MapComponent extends HTMLElement {
 
   /** @type {maplibregl.Map} */
   map;
-  isInteractive = true;
+  /** @type {boolean | undefined} */
+  isInteractive;
   /** @type {HTMLDivElement} */
   canvasContainer;
   /** @type {HTMLDivElement} */
@@ -69,9 +70,9 @@ export default class MapComponent extends HTMLElement {
 
   /**
    * Interval ID (set by setInterval) for the map's scroll animation
-   * @type {number}
+   * @type {number | undefined}
    */
-  mapScrollInterval;
+  mapScrollAnimationInterval = undefined;
 
   constructor() {
     super();
@@ -101,6 +102,7 @@ export default class MapComponent extends HTMLElement {
       focusAfterOpen: false,
       maxWidth: getComputedStyle(this).getPropertyValue('--max-popup-width'),
     });
+
     this.map = new maplibregl.Map({
       container: this.id,
       style: MAP_STYLE,
@@ -109,13 +111,14 @@ export default class MapComponent extends HTMLElement {
       attributionControl: false,
     });
     this.map.addControl(this.attributionControl, 'bottom-right');
-    this.map.on('load', () => {
-      this.disableInteractivity();
+    this.createCanvasOverlay();
+    this.enableBackdropOverlay();
+    this.matchMapToView(this.viewState.view);
+    this.viewState.subscribe('viewUpdate', () => {
+      this.matchMapToView(this.viewState.view);
     });
 
     this.quizState.subscribe('quizStart', () => {
-      this.stopMapScrollAnimation();
-
       if (this.map.getLayer('user-source-layer') !== undefined) {
         this.map.removeLayer('user-source-layer');
       }
@@ -173,8 +176,6 @@ export default class MapComponent extends HTMLElement {
           ],
         },
       });
-      this.fitMapToFeatures(this.quizState.filteredFeatures);
-      this.enableInteractivity();
     });
     this.quizState.subscribe('filtersUpdate', () => {
       this.fitMapToFeatures(this.quizState.filteredFeatures);
@@ -195,20 +196,25 @@ export default class MapComponent extends HTMLElement {
         );
       }
     });
-    this.viewState.subscribe('viewUpdate', (view) => {
-      this.stopMapScrollAnimation();
-      if (view === 'configurer') {
+  }
+
+  matchMapToView() {
+    switch (this.viewState.view) {
+      case 'configurer': {
         this.disableInteractivity();
-        this.fitMapToFeatures(this.quizState.features);
-      } else {
+        if (this.quizState.started) {
+          this.fitMapToFeatures(this.quizState.features);
+        } else {
+          this.playMapScrollAnimation();
+        }
+        break;
+      }
+      case 'quiz': {
         this.fitMapToFeatures(this.quizState.filteredFeatures);
         this.enableInteractivity();
+        break;
       }
-    });
-
-    this.createCanvasOverlay();
-    this.enableBackdropOverlay();
-    this.startMapScrollAnimation();
+    }
   }
 
   getUserSourceLayerFilter() {
@@ -282,7 +288,7 @@ export default class MapComponent extends HTMLElement {
   }
 
   enableInteractivity() {
-    if (this.isInteractive) {
+    if (this.isInteractive !== undefined && this.isInteractive) {
       return;
     }
     this.disableBackdropOverlay();
@@ -301,7 +307,7 @@ export default class MapComponent extends HTMLElement {
   }
 
   disableInteractivity() {
-    if (!this.isInteractive) {
+    if (this.isInteractive !== undefined && !this.isInteractive) {
       return;
     }
     this.quizState.highlightedFeatureId = undefined;
@@ -328,24 +334,27 @@ export default class MapComponent extends HTMLElement {
     this.canvasOverlay.classList.remove('map__canvas-overlay--backdrop');
   }
 
-  startMapScrollAnimation() {
-    this.mapScrollInterval = setInterval(() => {
-      this.map.panBy(
-        [-5, 0],
-        { easing: x => x, duration: 500 },
-      );
-    }, 500);
+  playMapScrollAnimation() {
+    if (this.mapScrollAnimationInterval === undefined) {
+      this.mapScrollAnimationInterval = setInterval(() => {
+        this.map.panBy(
+          [-5, 0],
+          { easing: x => x, duration: 500 },
+        );
+      }, 500);
+    }
   }
 
-  stopMapScrollAnimation() {
-    clearInterval(this.mapScrollInterval);
+  pauseMapScrollAnimation() {
+    clearInterval(this.mapScrollAnimationInterval);
+    this.mapScrollAnimationInterval = undefined;
   }
 
   /**
    * @param {GeoJSON.Feature[]} features
    */
   fitMapToFeatures(features) {
-    this.stopMapScrollAnimation();
+    this.pauseMapScrollAnimation();
     const bounds = calcGeoJsonBounds(convertFeaturesToFeatureCollection(features));
     this.map.fitBounds(bounds, { padding: 25, speed: 2 });
   }

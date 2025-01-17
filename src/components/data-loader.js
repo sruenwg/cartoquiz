@@ -46,7 +46,7 @@ export default class DataLoaderComponent extends HTMLElement {
           Preset
         </label>
         <div id="preset-select-container" class="data-loader__data-input-container">
-          <select id="preset-select" required>
+          <select id="preset-select" class="data-loader__preset-select" required>
             <option value="" selected>Select preset data</option>
           </select>
         </div>
@@ -242,10 +242,11 @@ function loadFileText(fileInput) {
  */
 function loadPresetText(select) {
   const filename = select.value;
-  if (!PRESETS.some((preset) => preset.filename === filename)) {
+  const selectedPreset = PRESETS.find((preset) => preset.filename === filename);
+  if (selectedPreset === undefined) {
     return Promise.reject(`Invalid option: "${filename}"`);
   }
   return fetch(`${PRESETS_DIR}/${filename}`)
     .then((response) => response.text())
-    .then((text) => ({ dataSource: filename, text }));
+    .then((text) => ({ dataSource: selectedPreset.label, text }));
 }

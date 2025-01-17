@@ -33,6 +33,17 @@ export function setFeatureId(feature, id) {
 }
 
 /**
+ * Sets the ID on each given feature object.
+ * @param {GeoJSON.Feature[]} features
+ */
+export function setFeatureIds(features) {
+  for (let i = 0; i < features.length; i += 1) {
+    features[i].id = i;
+  }
+  return features;
+}
+
+/**
  * Parses GeoJSON features and data attribution from given JSON string.
  * @param {string} textData
  * @returns {{ features: GeoJSON.Feature[], attribution?: string }}

@@ -1,3 +1,4 @@
+import DatabaseService from '../services/db.js';
 import QuizState from '../services/quiz-state.js';
 import ViewState from '../services/view-state.js';
 
@@ -9,6 +10,8 @@ import ViewState from '../services/view-state.js';
  */
 
 export default class AppComponent extends HTMLElement {
+  /** @type {DatabaseService} */
+  databaseService;
   /** @type {QuizState} */
   quizState;
   /** @type {ViewState} */
@@ -35,7 +38,8 @@ export default class AppComponent extends HTMLElement {
   viewToggle;
 
   connectedCallback() {
-    this.quizState = new QuizState();
+    this.databaseService = new DatabaseService();
+    this.quizState = new QuizState(this.databaseService);
     this.viewState = new ViewState('configurer');
     this.render();
   }
@@ -49,18 +53,21 @@ export default class AppComponent extends HTMLElement {
 
     this.overlayDiv = this.querySelector('#overlay');
     this.configurer = document.createElement('cq-configurer');
+    this.configurer.init(this.databaseService, this.quizState, this.viewState);
     this.quizPanes = document.createElement('cq-quiz-panes');
     this.quizPanes.init(this.quizState);
 
     this.viewToggle = document.createElement('cq-view-toggle');
     this.viewToggle.init(this.viewState);
 
-    this.showConfigView();
+    this.updateView();
     this.viewState.subscribe('viewUpdate', () => {
-      if (this.viewState.view === 'configurer') {
-        this.showConfigView();
-      } else {
-        this.showQuizView();
+      this.updateView();
+    });
+
+    this.quizState.subscribe('quizStart', () => {
+      if (!this.overlayDiv.contains(this.viewToggle)) {
+        this.overlayDiv.appendChild(this.viewToggle);
       }
     });
 
@@ -70,34 +77,18 @@ export default class AppComponent extends HTMLElement {
         this.map.fitMapToFeatures(features);
       }
     });
-
-    this.configurer.addEventListener('start', (event) => {
-      const {
-        features,
-        attribution,
-        matchProperty,
-        collectedPropertyValues,
-      } = event.detail;
-      this.quizState.startQuiz(
-        features,
-        attribution,
-        matchProperty,
-        collectedPropertyValues,
-      );
-      this.viewState.view = 'quiz';
-      if (!this.overlayDiv.contains(this.viewToggle)) {
-        this.overlayDiv.appendChild(this.viewToggle);
-      }
-    });
   }
-
-  showConfigView() {
-    this.quizPanes.remove();
-    this.overlayDiv.prepend(this.configurer);
-  }
-
-  showQuizView() {
-    this.configurer.remove();
-    this.overlayDiv.prepend(this.quizPanes);
+  
+  updateView() {
+    switch (this.viewState.view) {
+      case 'configurer':
+        this.quizPanes.remove();
+        this.overlayDiv.prepend(this.configurer);
+        break;
+      case 'quiz':
+        this.configurer.remove();
+        this.overlayDiv.prepend(this.quizPanes);
+        break;
+    }
   }
 }
