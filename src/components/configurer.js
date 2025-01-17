@@ -6,6 +6,8 @@ import { collectKeyValues, repopulateOptions } from '../utils/misc.js';
  * @import QuizState from '../services/quiz-state.js'
  * @import ViewState from '../services/view-state.js'
  * @import { PropertyValues, QuizInfo } from '../types.js'
+ * @import DataLoaderComponent from './data-loader.js'
+ * @import LoadingComponent from './loading.js'
  */
 
 export default class ConfigurerComponent extends HTMLElement {
@@ -72,7 +74,12 @@ export default class ConfigurerComponent extends HTMLElement {
               <option value="" selected>Select property name</option>
             </select>
           </div>
-          <button id="start-quiz-button" type="button" class="start-quiz-button" disabled>Start</button>
+          <div class="configurer__option-main-button-row">
+            <button id="start-quiz-button" type="button" disabled>
+              Start
+            </button>
+            <cq-loading id="create-quiz-loading"></cq-loading>
+          </div>
         </div>
       </div>
     `;
@@ -81,9 +88,19 @@ export default class ConfigurerComponent extends HTMLElement {
       this.showResumeQuizOption();
     }
 
+    /** @type {DataLoaderComponent} */
     const dataLoader = this.querySelector('cq-data-loader');
     this.matchPropertySelect = this.querySelector('#match-property-select');
     this.startQuizButton = this.querySelector('#start-quiz-button');
+    /** @type {LoadingComponent} */
+    const loadingIndicator = this.querySelector('#create-quiz-loading');
+
+    dataLoader.addEventListener('loadStart', () => {
+      loadingIndicator.play();
+    });
+    dataLoader.addEventListener('loadEnd', () => {
+      loadingIndicator.pause();
+    });
 
     dataLoader.addEventListener('dataUpdate', (event) => {
       this.dataSource = event.detail.dataSource;
@@ -102,13 +119,6 @@ export default class ConfigurerComponent extends HTMLElement {
 
     this.matchPropertySelect.onchange = () => {
       this.updateStartButton();
-
-      this.dispatchEvent(
-        new CustomEvent(
-          'matchPropertyUpdate',
-          { detail: this.matchPropertySelect.value },
-        ),
-      );
     };
 
     this.startQuizButton.onclick = async () => {
@@ -120,7 +130,9 @@ export default class ConfigurerComponent extends HTMLElement {
         collectedPropertyValues: this.collectedPropertyValues,
         matchProperty: this.matchPropertySelect.value,
       };
+      loadingIndicator.play();
       await this.quizState.startNewQuiz(quizInfo);
+      loadingIndicator.pause();
       this.viewState.view = 'quiz';
     };
   }
@@ -155,30 +167,36 @@ export default class ConfigurerComponent extends HTMLElement {
         Resume in-progress quiz
       </h3>
       <div class="configurer__resume-quiz-info">
-        <span class="configurer__resume-quiz-loading-text">
-          Checking for existing quiz in progress…
-        </span>
       </div>
-      <button id="resume-quiz-button" type="button" disabled>Resume</button>
+      <div class="configurer__option-main-button-row">
+        <button id="resume-quiz-button" type="button" disabled>
+          Resume
+        </button>
+        <cq-loading id="resume-quiz-loading"></cq-loading>
+      </div>
     `;
 
     options.append(divider, resumeQuizOption);
 
     const resumeQuizInfo = resumeQuizOption
       .querySelector('.configurer__resume-quiz-info');
-    const resumeQuizLoadingText = resumeQuizOption
-      .querySelector('.configurer__resume-quiz-loading-text');
     const resumeQuizButton = resumeQuizOption
       .querySelector('#resume-quiz-button');
+    /** @type {LoadingComponent} */
+    const loadingIndicator = resumeQuizOption
+      .querySelector('#resume-quiz-loading');
 
     resumeQuizButton.onclick = async () => {
+      loadingIndicator.play();
       await this.quizState.resumeExistingQuiz();
+      loadingIndicator.pause();
       this.viewState.view = 'quiz';
     };
 
+    loadingIndicator.play();
     this.databaseService.getQuizOverview()
       .then((overview) => {
-        resumeQuizLoadingText.remove();
+        loadingIndicator.pause();
         const existsQuiz = overview.dataSource !== undefined;
         if (existsQuiz) {
           resumeQuizInfo.innerHTML = `

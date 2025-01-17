@@ -31,6 +31,26 @@ input[type='url'] {
   font-size: 0.9em;
 }
 
+.loading__spinner {
+  animation: spinner-rotation 1s linear infinite;
+  border: 1px solid #333;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  box-sizing: border-box;
+  display: block;
+  height: 24px;
+  width: 24px;
+}
+
+@keyframes spinner-rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .view-toggle {
   --icon-button-background-color: var(--on-map-background--default);
   --icon-button-border: var(--on-map-border);
@@ -161,6 +181,13 @@ input[type='url'] {
   margin: 0 0 16px;
   font-size: larger;
   font-weight: 200;
+}
+
+.configurer__option-main-button-row {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .configurer__control-group {

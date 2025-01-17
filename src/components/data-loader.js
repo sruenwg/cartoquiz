@@ -123,16 +123,13 @@ export default class DataLoaderComponent extends HTMLElement {
     };
 
     urlInput.onkeydown = ({ isComposing, key }) => {
-      if (isComposing || key !== 'Enter') {
-        return;
-      }
       if (key === 'Enter' && !isComposing) {
-        urlLoader.loadData();
+        this.loadData(urlLoader);
       }
     };
-    urlFetchButton.onclick = () => urlLoader.loadData();
-    fileInput.onchange = () => fileLoader.loadData();
-    presetSelect.onchange = () => presetLoader.loadData();
+    urlFetchButton.onclick = () => this.loadData(urlLoader);
+    fileInput.onchange = () => this.loadData(fileLoader);
+    presetSelect.onchange = () => this.loadData(presetLoader);
 
     urlRadio.checked = true;
     urlRadio.dispatchEvent(new Event('change'));
@@ -148,6 +145,15 @@ export default class DataLoaderComponent extends HTMLElement {
       isPending: loader.isPending,
     };
     this.dispatchEvent(new CustomEvent('dataUpdate', { detail: payload }));
+  }
+
+  /**
+   * @param {Loader} loader
+   */
+  async loadData(loader) {
+    this.dispatchEvent(new CustomEvent('loadStart'));
+    await loader.loadData();
+    this.dispatchEvent(new CustomEvent('loadEnd'));
   }
 }
 
