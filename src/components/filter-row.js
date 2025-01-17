@@ -1,4 +1,3 @@
-import { REMOVE_SYMBOL } from '../constants.js';
 import { repopulateOptions, setSelectValue } from '../utils/misc.js';
 
 /**
@@ -38,19 +37,25 @@ export default class FilterRowComponent extends HTMLElement {
 
   render() {
     this.innerHTML = `
-      <label class="filter__select-label">
-        Key:
-        <select class="filter__key-select">
-          <option value="" selected>Select property key</option>
-        </select>
-      </label>
-      <label class="filter__select-label">
-        Value:
-        <select class="filter__value-select" disabled>
-          <option value="" selected>Select property value</option>
-        </select>
-      </label>
-      <button class="filter__remove-filter-button">${REMOVE_SYMBOL}</button>
+      <div class="filter__selections">
+        <label class="filter__select-label">
+          Key:
+          <select class="filter__key-select">
+            <option value="" selected>Select property key</option>
+          </select>
+        </label>
+        <label class="filter__select-label">
+          Value:
+          <select class="filter__value-select" disabled>
+            <option value="" selected>Select property value</option>
+          </select>
+        </label>
+      </div>
+      <button class="filter__remove-filter-button">
+        <span class="material-symbols-rounded filter__remove-filter-icon">
+          remove
+        </span>
+      </button>
     `;
 
     this.keySelect = this.querySelector('.filter__key-select');

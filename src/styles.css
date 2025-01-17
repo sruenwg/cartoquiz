@@ -362,15 +362,28 @@ input[type='url'] {
 }
 
 .filters__add-filter-button {
+  gap: 4px;
   height: 32px;
   padding: var(--pane-padding);
 }
 
+.filters__add-filter-icon {
+  font-size: 20px;
+  font-variation-settings: 'OPSZ' 20;
+}
+
 .filter {
   align-items: center;
-  column-gap: 12px;
+  gap: 12px;
   display: flex;
   height: 32px;
+}
+
+.filter__selections {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: 12px;
 }
 
 .filter__select-label {
@@ -387,8 +400,13 @@ input[type='url'] {
 
 .filter__remove-filter-button {
   flex: none;
-  height: 16px;
-  width: 16px;
+  height: 24px;
+  width: 24px;
+}
+
+.filter__remove-filter-icon {
+  font-size: 20px;
+  font-variation-settings: 'OPSZ' 20;
 }
 
 .guessed__numerator {

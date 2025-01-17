@@ -1,4 +1,4 @@
-import { ADD_SYMBOL, COLLAPSED_ARROW, EXPANDED_ARROW } from '../constants.js';
+import { COLLAPSED_ARROW, EXPANDED_ARROW } from '../constants.js';
 
 /**
  * @import QuizState from '../services/quiz-state.js'
@@ -96,7 +96,10 @@ export default class FilterPaneComponent extends HTMLElement {
   createAddFilterButton() {
     this.addFilterButton = document.createElement('button');
     this.addFilterButton.classList.add('filters__add-filter-button');
-    this.addFilterButton.textContent = `${ADD_SYMBOL} Add filter`;
+    this.addFilterButton.innerHTML = `
+      <span class="material-symbols-rounded filters__add-filter-icon">add</span>
+      Add filter
+    `;
     this.addFilterButton.onclick = () => {
       this.addBlankFilter();
     };
