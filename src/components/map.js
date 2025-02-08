@@ -3,7 +3,6 @@ import { noLabels } from 'protomaps-themes-base';
 import {
   calcGeoJsonBounds,
   convertFeaturesToFeatureCollection,
-  getFeatureId,
   calcGeometryCentre,
 } from '../utils/map-utils.js';
 
@@ -185,13 +184,13 @@ export default class MapComponent extends HTMLElement {
       this.map.setFilter('user-source-outline-layer', this.getUserSourceLayerFilter());
       for (const match of prevMatches) {
         this.map.setFeatureState(
-          { source: USER_SOURCE_ID, id: getFeatureId(match) },
+          { source: USER_SOURCE_ID, id: match.id },
           { 'last-guessed': false },
         );
       }
       for (const match of newMatches) {
         this.map.setFeatureState(
-          { source: USER_SOURCE_ID, id: getFeatureId(match) },
+          { source: USER_SOURCE_ID, id: match.id },
           { 'last-guessed': true },
         );
       }
@@ -228,7 +227,7 @@ export default class MapComponent extends HTMLElement {
       [
         'in',
         ['number', ['id']],
-        ['literal', this.quizState.guessedFeatures.map(getFeatureId)],
+        ['literal', this.quizState.guessedFeatureIds],
       ],
     ];
   }
@@ -241,12 +240,7 @@ export default class MapComponent extends HTMLElement {
       mousemoveEvent.point,
       { layers: ['user-source-layer'] },
     );
-    if (featuresUnderCursor.length === 0) {
-      this.quizState.highlightedFeatureId = undefined;
-    } else {
-      const featureId = getFeatureId(featuresUnderCursor[0]);
-      this.quizState.highlightedFeatureId = featureId;
-    }
+    this.quizState.highlightedFeatureId = featuresUnderCursor[0]?.id;
   }
 
   /**

@@ -3,6 +3,7 @@ import { removeAllChildren } from '../utils/misc.js';
 
 /**
  * @import QuizState from '../services/quiz-state.js'
+ * @import { Feature } from '../types.js'
  */
 
 export default class GuessedPaneComponent extends HTMLElement {
@@ -81,7 +82,7 @@ export default class GuessedPaneComponent extends HTMLElement {
   }
 
   /**
-   * @param {GeoJSON.Feature[]} features
+   * @param {Feature[]} features
    */
   addListItems(features) {
     for (const feature of features) {
@@ -90,7 +91,7 @@ export default class GuessedPaneComponent extends HTMLElement {
   }
 
   /**
-   * @param {GeoJSON.Feature} feature
+   * @param {Feature} feature
    */
   addListItem(feature) {
     const guessedRow = document.createElement('cq-guessed-row');

@@ -2,8 +2,6 @@
  * @import { FeatureId, InProgressQuizOverview, QuizInfo, StoredData } from '../types.js'
  */
 
-import { getFeatureId } from '../utils/map-utils.js';
-
 export default class DatabaseService {
   /**
    * @type {Promise<IDBDatabase>}
@@ -19,7 +17,7 @@ export default class DatabaseService {
         /** @type {IDBDatabase} */
         const db = e.target.result;
         db.createObjectStore('quiz-info');
-        db.createObjectStore('features');
+        db.createObjectStore('features', { keyPath: 'id' });
         db.createObjectStore('guessed-ids', { autoIncrement: true });
       };
     });
@@ -93,7 +91,7 @@ export default class DatabaseService {
       tx.objectStore('quiz-info').put(quizInfo.collectedPropertyValues, 'collected-property-values');
 
       for (const feature of quizInfo.features) {
-        tx.objectStore('features').put(feature, getFeatureId(feature));
+        tx.objectStore('features').put(feature);
       }
 
       tx.onabort = () => reject('setQuizInfo transaction aborted');

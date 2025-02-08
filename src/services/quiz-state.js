@@ -1,10 +1,9 @@
-import { getFeatureId, setFeatureId } from '../utils/map-utils.js';
 import { normalizeString, omitKeys } from '../utils/misc.js';
 import PubSub from '../utils/pub-sub.js';
 
 /**
  * @import DatabaseService from '../services/db.js'
- * @import { FeatureId, Filter, PropertyValues, QuizInfo } from '../types.js'
+ * @import { Feature, FeatureId, Filter, PropertyValues, QuizInfo } from '../types.js'
  */
 
 export default class QuizState extends PubSub {
@@ -34,7 +33,7 @@ export default class QuizState extends PubSub {
 
   /**
    * The loaded features, indexed by feature ID.
-   * @type {Map<FeatureId, GeoJSON.Feature>}
+   * @type {Map<FeatureId, Feature>}
    */
   #features = new Map();
 
@@ -88,12 +87,19 @@ export default class QuizState extends PubSub {
     return this.features.filter((feature) => this.#matchesFilters(feature));
   }
 
-  get guessedFeatures() {
-    return this.#guessedIds.map((id) => this.getFeatureById(id));
+  get guessedFeatureIds() {
+    return [...this.#guessedIds];
   }
 
+  /**
+   * @returns {Feature[]}
+   */
   get filteredGuessedFeatures() {
-    return this.guessedFeatures.filter((feature) => this.#matchesFilters(feature));
+    return this.#guessedIds
+      .map((id) => this.getFeatureById(id))
+      .filter((feature) => {
+        return feature !== undefined && this.#matchesFilters(feature);
+      });
   }
 
   get highlightedFeatureId() {
@@ -158,7 +164,7 @@ export default class QuizState extends PubSub {
   }
 
   /**
-   * @param {GeoJSON.Feature} feature
+   * @param {Feature} feature
    */
   getFeatureMatchPropertyValue(feature) {
     return feature.properties[this.#matchProperty];
@@ -187,7 +193,7 @@ export default class QuizState extends PubSub {
     const { newMatches } = this.#getMatches(guess);
     if (newMatches.length > 0) {
       const prevMatches = this.#lastGuessedIds.map((id) => this.#features.get(id));
-      const newlyGuessedIds = newMatches.map((feat) => getFeatureId(feat));
+      const newlyGuessedIds = newMatches.map((feature) => feature.id);
       this.#lastGuessedIds = newlyGuessedIds;
       this.#addGuessedIds(newlyGuessedIds);
       this.publish('matchesUpdate', { prevMatches, newMatches });
@@ -223,7 +229,7 @@ export default class QuizState extends PubSub {
 
   /**
    * @param {string} guess
-   * @returns {{ existingMatches: GeoJSON.Feature[], newMatches: GeoJSON.Feature[] }}
+   * @returns {{ existingMatches: Feature[], newMatches: Feature[] }}
    */
   #getMatches(guess) {
     const matches = this.filteredFeatures
@@ -236,7 +242,7 @@ export default class QuizState extends PubSub {
 
   /**
    * @param {string} guess
-   * @param {GeoJSON.Feature} feature
+   * @param {Feature} feature
    */
   #isMatch(guess, feature) {
     const matchValue = this.getFeatureMatchPropertyValue(feature);
@@ -250,7 +256,7 @@ export default class QuizState extends PubSub {
   }
 
   /**
-   * @param {GeoJSON.Feature} feature
+   * @param {Feature} feature
    */
   #matchesFilters(feature) {
     return this.filters.every(({ key, value }) => {
@@ -259,9 +265,9 @@ export default class QuizState extends PubSub {
   }
 
   /**
-   * @param {GeoJSON.Feature} feature
+   * @param {Feature} feature
    */
   #isGuessed(feature) {
-    return this.#guessedIds.includes(getFeatureId(feature));
+    return this.#guessedIds.includes(feature.id);
   }
 }

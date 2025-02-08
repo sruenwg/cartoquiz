@@ -105,7 +105,6 @@ export default class ConfigurerComponent extends HTMLElement {
     dataLoader.addEventListener('dataUpdate', (event) => {
       this.dataSource = event.detail.dataSource;
       this.features = event.detail.data?.features ?? [];
-      setFeatureIds(this.features);
       this.attribution = event.detail.data?.attribution;
       this.updateMatchPropertySelect();
       this.updateStartButton();
@@ -122,15 +121,15 @@ export default class ConfigurerComponent extends HTMLElement {
     };
 
     this.startQuizButton.onclick = async () => {
+      loadingIndicator.play();
       /** @type {QuizInfo} */
       const quizInfo = {
         dataSource: this.dataSource,
-        features: this.features,
+        features: setFeatureIds(this.features),
         attribution: this.attribution,
         collectedPropertyValues: this.collectedPropertyValues,
         matchProperty: this.matchPropertySelect.value,
       };
-      loadingIndicator.play();
       await this.quizState.startNewQuiz(quizInfo);
       loadingIndicator.pause();
       this.viewState.view = 'quiz';

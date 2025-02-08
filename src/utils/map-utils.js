@@ -3,7 +3,7 @@ import polylabel from 'polylabel';
 import * as topojson from 'topojson-client';
 
 /**
- * @import { FeatureId } from '../types.js'
+ * @import { Feature } from '../types.js'
  */
 
 const MIN_LNG = -180;
@@ -13,28 +13,9 @@ const MAX_LAT = 90;
 const POLYLABEL_PRECISION = 0.000001;
 
 /**
- * Gets the ID of the given feature.
- * @param {GeoJSON.Feature} feature
- * @returns {FeatureId}
- */
-export function getFeatureId(feature) {
-  return (feature.id);
-}
-
-/**
- * Sets the ID on the given feature object.
- * @param {GeoJSON.Feature} feature
- * @param {FeatureId} id
- * @returns {GeoJSON.Feature}
- */
-export function setFeatureId(feature, id) {
-  feature.id = id;
-  return feature;
-}
-
-/**
  * Sets the ID on each given feature object.
  * @param {GeoJSON.Feature[]} features
+ * @returns {Feature[]}
  */
 export function setFeatureIds(features) {
   for (let i = 0; i < features.length; i += 1) {
@@ -51,17 +32,26 @@ export function setFeatureIds(features) {
 export function parseFeaturesAndAttribution(textData) {
   try {
     const data = JSON.parse(textData);
+    if (typeof data !== 'object' || data === null) {
+      return { features: [] };
+    }
     const attribution = data.attribution;
     if (isTopology(data)) {
       const topologyObjectKeys = Object.keys(data.objects);
       const features = topologyObjectKeys
         .map((objectKey) => topojson.feature(data, objectKey))
         .flatMap(collectFeatures);
-      return { features, attribution };
+      return {
+        features,
+        ...(typeof attribution === 'string' ? { attribution } : {}),
+      };
     }
     if (isFeatureCollection(data)) {
       const features = collectFeatures(data);
-      return { features, attribution };
+      return {
+        features,
+        ...(typeof attribution === 'string' ? { attribution } : {}),
+      };
     }
   } catch (error) {
     console.error('Failed to parse features from given data', error);
@@ -71,29 +61,29 @@ export function parseFeaturesAndAttribution(textData) {
 
 /**
  * Naively checks if the given object is a `TopoJSON.Topology`.
- * @param {any} obj
+ * @param {object} obj
  * @returns {obj is TopoJSON.Topology}
  */
 function isTopology(obj) {
-  return obj?.type === 'Topology';
+  return obj.type === 'Topology';
 }
 
 /**
  * Naively checks if the given object is a `GeoJSON.FeatureCollection`.
- * @param {any} obj
+ * @param {object} obj
  * @returns {obj is GeoJSON.FeatureCollection}
  */
 function isFeatureCollection(obj) {
-  return obj?.type === 'FeatureCollection';
+  return obj.type === 'FeatureCollection';
 }
 
 /**
  * Naively checks if the given object is a `GeoJSON.Feature`.
- * @param {any} obj
+ * @param {object} obj
  * @returns {obj is GeoJSON.Feature}
  */
 function isFeature(obj) {
-  return obj?.type === 'Feature';
+  return obj.type === 'Feature';
 }
 
 /**

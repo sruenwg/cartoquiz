@@ -1,26 +1,21 @@
-import { getFeatureId } from '../utils/map-utils.js';
-
 /**
  * @import QuizState from '../services/quiz-state.js'
- * @import { FeatureId } from '../types.js'
+ * @import { Feature } from '../types.js'
  */
 
 export default class GuessedRowComponent extends HTMLElement {
   /** @type {QuizState} */
   quizState;
-  /** @type {GeoJSON.Feature} */
+  /** @type {Feature} */
   feature;
-  /** @type {FeatureId} */
-  featureId;
 
   /**
    * @param {QuizState} quizState
-   * @param {GeoJSON.Feature} feature
+   * @param {Feature} feature
    */
   init(quizState, feature) {
     this.quizState = quizState;
     this.feature = feature;
-    this.featureId = getFeatureId(this.feature);
   }
 
   connectedCallback() {
@@ -39,16 +34,16 @@ export default class GuessedRowComponent extends HTMLElement {
     this.quizState.subscribe(
       'highlightedFeatureUpdate',
       ({ previousHighlightedId, currentHighlightedId }) => {
-        if (this.featureId === previousHighlightedId) {
+        if (this.feature.id === previousHighlightedId) {
           this.classList.remove(highlightClass);
-        } else if (this.featureId === currentHighlightedId) {
+        } else if (this.feature.id === currentHighlightedId) {
           this.classList.add(highlightClass);
         }
       },
     );
 
     this.onmouseover = () => {
-      this.quizState.highlightedFeatureId = this.featureId;
+      this.quizState.highlightedFeatureId = this.feature.id;
     };
     this.onmouseout = () => {
       this.quizState.highlightedFeatureId = undefined;
