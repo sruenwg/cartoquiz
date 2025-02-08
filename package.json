@@ -1,5 +1,6 @@
 {
   "name": "cartoquiz",
+  "private": true,
   "devDependencies": {
     "maplibre-gl": "^5",
     "protomaps-themes-base": "3.1.0"
