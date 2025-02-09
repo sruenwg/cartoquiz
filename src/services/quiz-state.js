@@ -246,11 +246,22 @@ export default class QuizState extends PubSub {
    */
   #isMatch(guess, feature) {
     const matchValue = this.getFeatureMatchPropertyValue(feature);
-    if (typeof matchValue === 'string') {
-      return guess === normalizeString(matchValue);
-    }
     if (Array.isArray(matchValue)) {
-      return matchValue.some((value) => guess === normalizeString(value));
+      return matchValue.some((value) => this.#matchesGuessPrimitiveValue(guess, value));
+    }
+    return this.#matchesGuessPrimitiveValue(guess, matchValue);
+  }
+
+  /**
+   * @param {string} guess
+   * @param {unknown} value
+   */
+  #matchesGuessPrimitiveValue(guess, value) {
+    if (typeof value === 'string') {
+      return guess === normalizeString(value);
+    }
+    if (typeof value === 'number') {
+      return guess === value.toString();
     }
     return false;
   }
