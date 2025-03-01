@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import polylabel from 'polylabel';
 import * as topojson from 'topojson-client';
+import { validateGeoJson, validateTopoJson } from './validation.js';
 
 /**
  * @import { Feature } from '../types.js'
@@ -27,63 +28,36 @@ export function setFeatureIds(features) {
 /**
  * Parses GeoJSON features and data attribution from given JSON string.
  * @param {string} textData
- * @returns {{ features: GeoJSON.Feature[], attribution?: string }}
+ * @returns {Promise<{ features: GeoJSON.Feature[], attribution?: string }>}
  */
-export function parseFeaturesAndAttribution(textData) {
-  try {
-    const data = JSON.parse(textData);
-    if (typeof data !== 'object' || data === null) {
-      return { features: [] };
-    }
-    const attribution = data.attribution;
-    if (isTopology(data)) {
-      const topologyObjectKeys = Object.keys(data.objects);
-      const features = topologyObjectKeys
-        .map((objectKey) => topojson.feature(data, objectKey))
-        .flatMap(collectFeatures);
-      return {
-        features,
-        ...(typeof attribution === 'string' ? { attribution } : {}),
-      };
-    }
-    if (isFeatureCollection(data)) {
+export async function parseFeaturesAndAttribution(textData) {
+  /** @type {unknown} */
+  const data = JSON.parse(textData);
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('Failed to parse features from given data');
+  }
+  const attribution = data.attribution;
+  if ((await validateTopoJson)(data)) {
+    const topologyObjectKeys = Object.keys(data.objects);
+    const features = topologyObjectKeys
+      .map((objectKey) => topojson.feature(data, objectKey))
+      .flatMap(collectFeatures);
+    return {
+      features,
+      ...(typeof attribution === 'string' ? { attribution } : {}),
+    };
+  }
+  if ((await validateGeoJson)(data)) {
+    if (data.type === 'FeatureCollection') {
       const features = collectFeatures(data);
       return {
         features,
         ...(typeof attribution === 'string' ? { attribution } : {}),
       };
     }
-  } catch (error) {
-    console.error('Failed to parse features from given data', error);
+    throw new Error('GeoJSON must be a FeatureCollection');
   }
-  return { features: [] };
-}
-
-/**
- * Naively checks if the given object is a `TopoJSON.Topology`.
- * @param {object} obj
- * @returns {obj is TopoJSON.Topology}
- */
-function isTopology(obj) {
-  return obj.type === 'Topology';
-}
-
-/**
- * Naively checks if the given object is a `GeoJSON.FeatureCollection`.
- * @param {object} obj
- * @returns {obj is GeoJSON.FeatureCollection}
- */
-function isFeatureCollection(obj) {
-  return obj.type === 'FeatureCollection';
-}
-
-/**
- * Naively checks if the given object is a `GeoJSON.Feature`.
- * @param {object} obj
- * @returns {obj is GeoJSON.Feature}
- */
-function isFeature(obj) {
-  return obj.type === 'Feature';
+  throw new Error('Failed to parse features from given data');
 }
 
 /**
@@ -92,10 +66,10 @@ function isFeature(obj) {
  * @returns {GeoJSON.Feature[]}
  */
 function collectFeatures(geoJsonObject) {
-  if (isFeature(geoJsonObject)) {
+  if (geoJsonObject.type === 'Feature') {
     return [geoJsonObject];
   }
-  if (isFeatureCollection(geoJsonObject)) {
+  if (geoJsonObject.type === 'FeatureCollection') {
     return geoJsonObject.features;
   }
   return [];

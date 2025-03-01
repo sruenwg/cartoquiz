@@ -157,17 +157,20 @@ export default class DataLoaderComponent extends HTMLElement {
   }
 }
 
+/**
+ * @template {unknown} T - The expected type of the parsed data.
+ */
 class Loader {
   /** @type {() => Promise<{ dataSource: string, text: string }>} */
   textLoader;
-  /** @type {(text: string) => any} */
+  /** @type {(text: string) => T | Promise<T>} */
   dataParser;
   /** @type {(loader: Loader) => void} */
   onStateChange;
   isPending = false;
   /** @type {string | undefined} */
   dataSource;
-  /** @type {any | undefined} */
+  /** @type {T | undefined} */
   data;
 
   get hasData() {
@@ -176,7 +179,7 @@ class Loader {
 
   /**
    * @param {() => Promise<{ dataSource: string, text: string }>} textLoader
-   * @param {(text: string) => any} dataParser
+   * @param {(text: string) => T | Promise<T>} dataParser
    * @param {(loader: Loader) => void} onStateChange
    */
   constructor(textLoader, dataParser, onStateChange) {
@@ -194,7 +197,10 @@ class Loader {
     return this.textLoader()
       .then(({ dataSource, text }) => {
         this.dataSource = dataSource;
-        this.data = this.dataParser(text);
+        return this.dataParser(text);
+      })
+      .then((data) => {
+        this.data = data;
       })
       .catch((err) => {
         this.dataSource = undefined;

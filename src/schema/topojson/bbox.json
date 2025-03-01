@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TopoJSON Bounding Box",
+  "type": "array",
+  "items": {
+    "type": "number"
+  },
+  "minItems": 2
+}
