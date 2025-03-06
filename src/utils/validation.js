@@ -5,7 +5,7 @@ import Ajv from 'ajv';
  */
 
 const GEOJSON_SCHEMA_PATH = 'https://geojson.org/schema/GeoJSON.json';
-const TOPOJSON_SCHEMA_PATH = '/src/schema/topojson/topology.json';
+const TOPOJSON_SCHEMA_PATH = 'src/schema/topojson/topology.json';
 
 const ajv = new Ajv({
   loadSchema,
