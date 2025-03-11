@@ -4,7 +4,7 @@ import * as topojson from 'topojson-client';
 import { validateGeoJson, validateTopoJson } from './validation.js';
 
 /**
- * @import { Feature } from '../types.js'
+ * @import { Feature, ParsedFileData } from '../types.js'
  */
 
 const MIN_LNG = -180;
@@ -26,38 +26,40 @@ export function setFeatureIds(features) {
 }
 
 /**
- * Parses GeoJSON features and data attribution from given JSON string.
+ * Parses and validates given JSON string as TopoJSON or GeoJSON.
  * @param {string} textData
- * @returns {Promise<{ features: GeoJSON.Feature[], attribution?: string }>}
+ * @returns {Promise<ParsedFileData>}
  */
-export async function parseFeaturesAndAttribution(textData) {
+export async function parseAndValidateData(textData) {
   /** @type {unknown} */
   const data = JSON.parse(textData);
-  if (typeof data !== 'object' || data === null) {
-    throw new Error('Failed to parse features from given data');
+  if (typeof data !== 'object' || Array.isArray(data) || data === null) {
+    throw new Error('Data not a valid GeoJSON or TopoJSON');
   }
   const attribution = data.attribution;
   if ((await validateTopoJson)(data)) {
-    const topologyObjectKeys = Object.keys(data.objects);
-    const features = topologyObjectKeys
-      .map((objectKey) => topojson.feature(data, objectKey))
-      .flatMap(collectFeatures);
     return {
-      features,
+      type: 'topojson',
       ...(typeof attribution === 'string' ? { attribution } : {}),
+      layerNames: Object.keys(data.objects),
+      getLayerFeatures: (layerName) => {
+        return collectFeatures(topojson.feature(data, layerName));
+      },
     };
   }
   if ((await validateGeoJson)(data)) {
     if (data.type === 'FeatureCollection') {
-      const features = collectFeatures(data);
       return {
-        features,
+        type: 'geojson',
         ...(typeof attribution === 'string' ? { attribution } : {}),
+        getFeatures: () => {
+          return collectFeatures(data);
+        }
       };
     }
     throw new Error('GeoJSON must be a FeatureCollection');
   }
-  throw new Error('Failed to parse features from given data');
+  throw new Error('Data not a valid GeoJSON or TopoJSON');
 }
 
 /**

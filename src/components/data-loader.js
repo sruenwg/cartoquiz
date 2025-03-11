@@ -1,5 +1,9 @@
-import { parseFeaturesAndAttribution } from '../utils/map-utils.js';
+import { parseAndValidateData } from '../utils/map-utils.js';
 import { repopulateOptions } from '../utils/misc.js';
+
+/**
+ * @import { ParsedFileData } from '../types.js'
+ */
 
 const VALID_FILE_EXTENSIONS = ['json', 'geojson', 'topojson'];
 const PRESETS_DIR = './data';
@@ -77,7 +81,7 @@ export default class DataLoaderComponent extends HTMLElement {
 
     const urlLoader = new Loader(
       () => loadRemoteText(urlInput),
-      parseFeaturesAndAttribution,
+      parseAndValidateData,
       (loader) => {
         urlFetchButton.disabled = loader.isPending;
         this.emitLoaderUpdate(loader);
@@ -85,12 +89,12 @@ export default class DataLoaderComponent extends HTMLElement {
     );
     const fileLoader = new Loader(
       () => loadFileText(fileInput),
-      parseFeaturesAndAttribution,
+      parseAndValidateData,
       (loader) => this.emitLoaderUpdate(loader),
     );
     const presetLoader = new Loader(
       () => loadPresetText(presetSelect),
-      parseFeaturesAndAttribution,
+      parseAndValidateData,
       (loader) => this.emitLoaderUpdate(loader),
     );
 
@@ -136,7 +140,7 @@ export default class DataLoaderComponent extends HTMLElement {
   }
 
   /**
-   * @param {Loader} loader
+   * @param {Loader<ParsedFileData>} loader
    */
   emitLoaderUpdate(loader) {
     const payload = {
@@ -144,11 +148,11 @@ export default class DataLoaderComponent extends HTMLElement {
       data: loader.data,
       isPending: loader.isPending,
     };
-    this.dispatchEvent(new CustomEvent('dataUpdate', { detail: payload }));
+    this.dispatchEvent(new CustomEvent('dataLoaderUpdate', { detail: payload }));
   }
 
   /**
-   * @param {Loader} loader
+   * @param {Loader<ParsedFileData>} loader
    */
   async loadData(loader) {
     this.dispatchEvent(new CustomEvent('loadStart'));

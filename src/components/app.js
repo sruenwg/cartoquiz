@@ -71,9 +71,9 @@ export default class AppComponent extends HTMLElement {
       }
     });
 
-    this.configurer.addEventListener('dataUpdate', (event) => {
-      const features = event.detail.features;
-      if (features.length > 0) {
+    this.configurer.addEventListener('featuresUpdate', (event) => {
+      const features = event.detail;
+      if (features?.length > 0) {
         this.map.fitMapToFeatures(features);
       }
     });
