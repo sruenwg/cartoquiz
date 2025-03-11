@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TopoJSON Topology Object",
+  "$ref": "topojson.json",
   "type": "object",
   "required": [
-    "type",
     "objects",
     "arcs"
   ],
@@ -19,9 +19,6 @@
     },
     "transform": {
       "$ref": "#/definitions/transform"
-    },
-    "bbox": {
-      "$ref": "bbox.json"
     }
   },
   "definitions": {
