@@ -1,10 +1,8 @@
 import maplibregl from 'maplibre-gl';
 import polylabel from 'polylabel';
-import * as topojson from 'topojson-client';
-import { validateGeoJson, validateTopoJson } from './validation.js';
 
 /**
- * @import { Feature, ParsedFileData } from '../types.js'
+ * @import { Feature } from '../types.js'
  */
 
 const MIN_LNG = -180;
@@ -26,53 +24,16 @@ export function setFeatureIds(features) {
 }
 
 /**
- * Parses and validates given JSON string as TopoJSON or GeoJSON.
- * @param {string} textData
- * @returns {Promise<ParsedFileData>}
- */
-export async function parseAndValidateData(textData) {
-  /** @type {unknown} */
-  const data = JSON.parse(textData);
-  if (typeof data !== 'object' || Array.isArray(data) || data === null) {
-    throw new Error('Data not a valid GeoJSON or TopoJSON');
-  }
-  const attribution = data.attribution;
-  if ((await validateTopoJson)(data)) {
-    return {
-      type: 'topojson',
-      ...(typeof attribution === 'string' ? { attribution } : {}),
-      layerNames: Object.keys(data.objects),
-      getLayerFeatures: (layerName) => {
-        return collectFeatures(topojson.feature(data, layerName));
-      },
-    };
-  }
-  if ((await validateGeoJson)(data)) {
-    if (data.type === 'FeatureCollection') {
-      return {
-        type: 'geojson',
-        ...(typeof attribution === 'string' ? { attribution } : {}),
-        getFeatures: () => {
-          return collectFeatures(data);
-        }
-      };
-    }
-    throw new Error('GeoJSON must be a FeatureCollection');
-  }
-  throw new Error('Data not a valid GeoJSON or TopoJSON');
-}
-
-/**
- * Returns all features contained in the given GeoJSON object.
- * @param {GeoJSON.Feature | GeoJSON.FeatureCollection} geoJsonObject
+ * Returns an array of all features contained in the given GeoJSON.
+ * @param {GeoJSON.GeoJSON} geoJson
  * @returns {GeoJSON.Feature[]}
  */
-function collectFeatures(geoJsonObject) {
-  if (geoJsonObject.type === 'Feature') {
-    return [geoJsonObject];
+export function collectFeatures(geoJson) {
+  if (geoJson.type === 'Feature') {
+    return [geoJson];
   }
-  if (geoJsonObject.type === 'FeatureCollection') {
-    return geoJsonObject.features;
+  if (geoJson.type === 'FeatureCollection') {
+    return geoJson.features;
   }
   return [];
 }

@@ -106,3 +106,23 @@ export function removeAllChildren(element) {
 export function normalizeString(value) {
   return value.trim().toLowerCase();
 }
+
+/**
+ * Returns a comparison function for use in Array.sort() where the given
+ * callback would be applied to each element to determine its sort position.
+ * @template {any} T
+ * @param {(element: T) => (string | number)} callback - Function to determine element value.
+ */
+export function compareWithCallback(callback) {
+  return (a, b) => {
+    const valueA = callback(a);
+    const valueB = callback(b);
+    if (valueA < valueB) {
+      return -1;
+    }
+    if (valueA > valueB) {
+      return 1;
+    }
+    return 0;
+  };
+}

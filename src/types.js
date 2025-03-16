@@ -5,24 +5,14 @@
  * @typedef {{ [key: string]: any[] }} PropertyValues
  * @typedef {{ quizInfo: QuizInfo, guessedIds: FeatureId[] } | { quizInfo: undefined, guessedIds: undefined }} StoredData
  * 
- * @typedef {ParsedFileData & { source: string }} LoadedData
- * @typedef {ParsedTopoJsonData | ParsedGeoJsonData} ParsedFileData
- * 
- * @typedef {Object} ParsedTopoJsonData
- * @property {'topojson'} type
+ * @typedef {Object} DatasetWithAttribution
+ * @property {Dataset} dataset
  * @property {string} [attribution]
- * @property {string[]} layerNames
- * @property {(layerName: string) => GeoJSON.Feature[] | undefined} getLayerFeatures
- * 
- * @typedef {Object} ParsedGeoJsonData
- * @property {'geojson'} type
- * @property {string} [attribution]
- * @property {() => GeoJSON.Feature[]} getFeatures
  * 
  * @typedef {Object} QuizInfo
  * @property {string} dataSource
  * @property {Feature[]} features
- * @property {string} attribution
+ * @property {string} [attribution]
  * @property {string} matchProperty
  * @property {PropertyValues} collectedPropertyValues
  * 
@@ -31,4 +21,9 @@
  * @property {string} matchProperty
  * @property {number} numFeatures
  * @property {number} numGuessed
+ */
+
+/**
+ * @template {any} T
+ * @typedef {{ promise: Promise<T>, abort: () => void }} PromiseWithAbort<T>
  */

@@ -1,13 +1,18 @@
-import { setFeatureIds } from '../utils/map-utils.js';
-import { collectKeyValues, repopulateOptions } from '../utils/misc.js';
+import * as Gdal from '../utils/gdal.js';
+import { collectFeatures, setFeatureIds } from '../utils/map-utils.js';
+import { collectKeyValues, compareWithCallback, repopulateOptions } from '../utils/misc.js';
 
 /**
  * @import DatabaseService from '../services/db.js'
  * @import QuizState from '../services/quiz-state.js'
  * @import ViewState from '../services/view-state.js'
- * @import { LoadedData, PropertyValues, QuizInfo } from '../types.js'
- * @import DataLoaderComponent from './data-loader.js'
+ * @import { DatasetWithAttribution, PromiseWithAbort, PropertyValues, QuizInfo } from '../types.js'
+ * @import DatasetLoaderComponent from './dataset-loader.js'
  * @import LoadingComponent from './loading.js'
+ * 
+ * @typedef {Object} FeatureData
+ * @property {GeoJSON.Feature[]} features
+ * @property {PropertyValues} collectedPropertyValues
  */
 
 export default class ConfigurerComponent extends HTMLElement {
@@ -24,60 +29,112 @@ export default class ConfigurerComponent extends HTMLElement {
   matchPropertySelect;
   /** @type {HTMLButtonElement} */
   startQuizButton;
+  /** @type {LoadingComponent} */
+  loadingIndicator;
 
-  /** @type {HTMLElement} */
-  dataLoaderContainer;
-  /** @type {HTMLElement} */
-  layerSelectContainer;
-
-  get data() {
-    return this.#data;
+  get loading() {
+    return this.#loadingTasksCount > 0;
   }
-  set data(value) {
-    this.#data = value;
-
-    if (this.data?.type === 'geojson') {
-      this.features = this.data.getFeatures();
-    } else { // this.data === undefined || this.data.type === 'topojson'
-      this.features = undefined;
-    }
-
-    this.updateLayerSelect();
-  }
-  /** @type {LoadedData | undefined} */
-  #data = undefined;
-
-  get features() {
-    return this.#features;
-  }
-  set features(value) {
-    this.#features = value;
-
-    if (this.features === undefined) {
-      this.collectedPropertyValues = undefined;
+  set loading(value) {
+    if (value) {
+      this.#loadingTasksCount += 1;
     } else {
-      const allProperties = this.features.map((feature) => feature.properties);
-      this.collectedPropertyValues = collectKeyValues(allProperties);
+      this.#loadingTasksCount -= 1;
     }
-
-    this.dispatchEvent(new CustomEvent('featuresUpdate', { detail: this.features }));
+    if (this.loading) {
+      this.loadingIndicator.play();
+    } else {
+      this.loadingIndicator.pause();
+    }
   }
-  /** @type {GeoJSON.Feature[] | undefined} */
-  #features = undefined;
+  #loadingTasksCount = 0;
 
-  get collectedPropertyValues() {
-    return this.#collectedPropertyValues;
+  get datasetState() {
+    return this.#datasetState;
   }
-  set collectedPropertyValues(value) {
-    this.#collectedPropertyValues = value;
+  set datasetState(value) {
+    const wasLoading = this.#datasetState.loading;
+    this.#datasetState = value;
 
+    if (!wasLoading && value.loading) {
+      this.loading = true;
+    } else if (wasLoading && !value.loading) {
+      this.loading = false;
+    }
+    this.selectedLayerName = undefined;
+    this.updateLayerSelect(value.datasetInfo?.dataset.info.layers);
+  }
+  /** @type {{ loading: boolean, datasetInfo: DatasetWithAttribution | undefined }} */
+  #datasetState = { loading: false, datasetInfo: undefined };
+
+  get datasetInfo() {
+    return this.#datasetState.datasetInfo;
+  }
+
+  get selectedLayerName() {
+    return this.#selectedLayerName;
+  }
+  set selectedLayerName(value) {
+    this.#selectedLayerName = value;
+
+    this.featureData = undefined;
+    /** @type {Layer | undefined} */
+    const layer = this.datasetInfo?.dataset.info.layers
+      .find((layer) => layer.name === this.selectedLayerName);
+    if (layer !== undefined) {
+      this.loading = true;
+      const promiseWithResolvers = Promise.withResolvers();
+      const featureData = Promise.race([
+        promiseWithResolvers.promise,
+        Gdal.toGeoJson(this.datasetInfo.dataset, layer),
+      ])
+        .then((geoJson) => {
+          if (geoJson === undefined) {
+            return undefined;
+          }
+          const features = collectFeatures(geoJson);
+          const allProperties = features.map((feature) => feature.properties);
+          const collectedPropertyValues = collectKeyValues(allProperties);
+          return { features, collectedPropertyValues };
+        })
+        .catch((err) => {
+          console.error(err);
+          return undefined;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+      this.featureData = {
+        promise: featureData,
+        abort: () => promiseWithResolvers.resolve(undefined),
+      };
+    }
+  }
+  /** @type {string | undefined} */
+  #selectedLayerName = undefined;
+
+  get featureData() {
+    return this.#featureData;
+  }
+  set featureData(value) {
+    this.#featureData?.abort();
+    this.#featureData = value;
+
+    this.dispatchEvent(new CustomEvent('featuresUpdate', { detail: undefined }));
     this.matchProperty = undefined;
+    this.updateMatchPropertySelect(undefined);
 
-    this.updateMatchPropertySelect();
+    this.featureData?.promise
+      .then((featureData) => {
+        const features = featureData?.features;
+        const collectedPropertyValues = featureData?.collectedPropertyValues;
+        this.dispatchEvent(new CustomEvent('featuresUpdate', { detail: features }));
+        this.matchProperty = undefined;
+        this.updateMatchPropertySelect(collectedPropertyValues);
+      });
   }
-  /** @type {PropertyValues | undefined} */
-  #collectedPropertyValues = undefined;
-
+  /** @type {PromiseWithAbort<FeatureData | undefined> | undefined} */
+  #featureData = undefined;
 
   get matchProperty() {
     return this.#matchProperty;
@@ -89,10 +146,6 @@ export default class ConfigurerComponent extends HTMLElement {
   }
   /** @type {string | undefined} */
   #matchProperty = undefined;
-
-  get isValidDataLoaded() {
-    return this.data !== undefined;
-  }
 
   /**
    * @param {DatabaseService} databaseService
@@ -118,11 +171,19 @@ export default class ConfigurerComponent extends HTMLElement {
           <h3 class="configurer__option-heading">
             Create new quiz
           </h3>
-          <div class="configurer__control-group" id="data-loader-container">
+          <div class="configurer__control-group">
             <div class="configurer__control-group-label">
-              Load data source (GeoJSON or TopoJSON):
+              Load dataset:
             </div>
-            <cq-data-loader></cq-data-loader>
+            <cq-dataset-loader></cq-dataset-loader>
+          </div>
+          <div class="configurer__control-group">
+            <label for="layer-select" class="configurer__control-group-label">
+              Dataset layer:
+            </label>
+            <select id="layer-select" required disabled>
+              <option value="" selected>Select layer</option>
+            </select>
           </div>
           <div class="configurer__control-group">
             <label for="match-property-select" class="configurer__control-group-label">
@@ -146,111 +207,77 @@ export default class ConfigurerComponent extends HTMLElement {
       this.showResumeQuizOption();
     }
 
-    /** @type {DataLoaderComponent} */
-    const dataLoader = this.querySelector('cq-data-loader');
+    /** @type {DatasetLoaderComponent} */
+    const datasetLoader = this.querySelector('cq-dataset-loader');
+    this.layerSelect = this.querySelector('#layer-select');
     this.matchPropertySelect = this.querySelector('#match-property-select');
     this.startQuizButton = this.querySelector('#start-quiz-button');
-    /** @type {LoadingComponent} */
-    const loadingIndicator = this.querySelector('#create-quiz-loading');
+    this.loadingIndicator = this.querySelector('cq-loading');
 
-    this.dataLoaderContainer = this.querySelector('#data-loader-container');
-    const { layerSelect, layerSelectContainer } = this.createLayerSelectAndContainer();
-    this.layerSelectContainer = layerSelectContainer;
-    this.layerSelect = layerSelect;
-
-    dataLoader.addEventListener('loadStart', () => {
-      loadingIndicator.play();
-    });
-    dataLoader.addEventListener('loadEnd', () => {
-      loadingIndicator.pause();
-    });
-
-    dataLoader.addEventListener('dataLoaderUpdate', (event) => {
-      if (event.detail?.dataSource === undefined || event.detail?.data === undefined) {
-        this.data = undefined;
-      } else {
-        this.data = {
-          ...event.detail.data,
-          source: event.detail.dataSource,
-        };
-      }
+    datasetLoader.addEventListener('loadingStateUpdate', (event) => {
+      this.datasetState = event.detail;
     });
 
     this.layerSelect.onchange = () => {
-      if (this.data === undefined) {
-        this.features = undefined;
-      } else if (this.data.type === 'geojson') {
-        this.features = this.data.getFeatures();
-      } else { // this.data.type === 'topojson'
-        this.features = this.layerSelect.value
-          ? this.data.getLayerFeatures(this.layerSelect.value)
-          : undefined;
-      }
+      this.selectedLayerName = this.layerSelect.value || undefined;
     };
 
     this.matchPropertySelect.onchange = () => {
-      this.matchProperty = this.matchPropertySelect.value.trim() || undefined;
+      this.matchProperty = this.matchPropertySelect.value || undefined;
     };
 
     this.startQuizButton.onclick = async () => {
-      loadingIndicator.play();
+      this.loading = true;
+
+      const featureData = await this.featureData.promise;
+      if (featureData === undefined) {
+        this.loading = false;
+        return;
+      }
       /** @type {QuizInfo} */
       const quizInfo = {
-        dataSource: this.data.source,
-        features: setFeatureIds(this.features),
-        attribution: this.data.attribution,
-        collectedPropertyValues: this.collectedPropertyValues,
+        dataSource: this.datasetInfo.dataset.path,
+        features: setFeatureIds(featureData.features),
+        attribution: this.datasetInfo.attribution || undefined,
+        collectedPropertyValues: featureData.collectedPropertyValues,
         matchProperty: this.matchProperty,
       };
       await this.quizState.startNewQuiz(quizInfo);
-      loadingIndicator.pause();
+      this.loading = false;
       this.viewState.view = 'quiz';
     };
   }
 
-  createLayerSelectAndContainer() {
-    const layerSelectContainer = document.createElement('div');
-    layerSelectContainer.classList.add('configurer__control-group');
-    layerSelectContainer.id = 'layer-select-container';
-    layerSelectContainer.innerHTML = `
-      <label for="layer-select" class="configurer__control-group-label">
-        Dataset layer:
-      </label>
-      <select id="layer-select" required>
-        <option value="" selected>Select layer</option>
-      </select>
-    `;
-    const layerSelect = layerSelectContainer.querySelector('#layer-select');
-    return { layerSelectContainer, layerSelect };
-  }
-
-  updateLayerSelect() {
+  /**
+   * @param {Layer[] | undefined}
+   */
+  updateLayerSelect(layers) {
     this.layerSelect.disabled = true;
+    const remainDisabled = layers === undefined;
+    layers = layers ?? [];
 
-    if (this.data?.type !== 'topojson') {
-      this.layerSelectContainer.remove();
-      return;
-    }
-    const layerOptions = [...this.data.layerNames]
-      .sort()
-      .map((layerName) => new Option(layerName));
+    const layerOptions = layers
+      .map((layer) => new Option(layer.name))
+      .sort(compareWithCallback((option) => option.value));
     repopulateOptions(this.layerSelect, layerOptions, true);
-    if (!document.contains(this.layerSelectContainer)) {
-      this.dataLoaderContainer.after(this.layerSelectContainer);
-    }
     if (layerOptions.length === 1) {
       // Auto-select sole layer
       this.layerSelect.value = layerOptions[0].value;
       this.layerSelect.dispatchEvent(new Event('change'));
     }
 
-    this.layerSelect.disabled = this.data === undefined;
+    this.layerSelect.disabled = remainDisabled;
   }
 
-  updateMatchPropertySelect() {
+  /**
+   * @param {PropertyValues | undefined} collectedPropertyValues
+   */
+  updateMatchPropertySelect(collectedPropertyValues) {
     this.matchPropertySelect.disabled = true;
+    const remainDisabled = collectedPropertyValues === undefined;
+    collectedPropertyValues = collectedPropertyValues ?? {};
 
-    const matchPropertyOptions = Object.keys(this.collectedPropertyValues ?? {})
+    const matchPropertyOptions = Object.keys(collectedPropertyValues)
       .sort()
       .map((key) => new Option(key));
     repopulateOptions(this.matchPropertySelect, matchPropertyOptions, true);
@@ -260,7 +287,7 @@ export default class ConfigurerComponent extends HTMLElement {
       this.matchPropertySelect.dispatchEvent(new Event('change'));
     }
 
-    this.matchPropertySelect.disabled = this.collectedPropertyValues === undefined;
+    this.matchPropertySelect.disabled = remainDisabled;
   }
 
   updateStartButton() {
