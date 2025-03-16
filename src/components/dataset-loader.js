@@ -22,6 +22,16 @@ const PRESETS = [
 ];
 
 export default class DatasetLoaderComponent extends HTMLElement {
+  get disabled() {
+    return this.#disabled;
+  }
+  set disabled(value) {
+    this.#disabled = value;
+    for (const control of this.controls) {
+      control.disabled = value;
+    }
+  }
+
   get state() {
     return {
       datasetInfo: this.#datasetInfo,
@@ -54,6 +64,11 @@ export default class DatasetLoaderComponent extends HTMLElement {
 
   /** @type {DatasetWithAttribution | undefined} */
   #datasetInfo = undefined;
+
+  /** @type {(HTMLButtonElement | HTMLInputElement | HTMLSelectElement)[]} */
+  controls = [];
+
+  #disabled = false;
 
   connectedCallback() {
     this.render();
@@ -119,6 +134,16 @@ export default class DatasetLoaderComponent extends HTMLElement {
       presetSelect,
       PRESETS.map(({ label, filename }) => new Option(label, filename)),
     );
+
+    this.controls = [
+      urlRadio,
+      urlInput,
+      urlFetchButton,
+      fileRadio,
+      fileInput,
+      presetRadio,
+      presetSelect,
+    ];
 
     urlRadio.onchange = () => {
       this.resetState();

@@ -23,6 +23,8 @@ export default class ConfigurerComponent extends HTMLElement {
   /** @type {ViewState} */
   viewState;
 
+  /** @type {DatasetLoaderComponent} */
+  datasetLoader;
   /** @type {HTMLSelectElement} */
   layerSelect;
   /** @type {HTMLSelectElement} */
@@ -207,14 +209,13 @@ export default class ConfigurerComponent extends HTMLElement {
       this.showResumeQuizOption();
     }
 
-    /** @type {DatasetLoaderComponent} */
-    const datasetLoader = this.querySelector('cq-dataset-loader');
+    this.datasetLoader = this.querySelector('cq-dataset-loader');
     this.layerSelect = this.querySelector('#layer-select');
     this.matchPropertySelect = this.querySelector('#match-property-select');
     this.startQuizButton = this.querySelector('#start-quiz-button');
     this.loadingIndicator = this.querySelector('cq-loading');
 
-    datasetLoader.addEventListener('loadingStateUpdate', (event) => {
+    this.datasetLoader.addEventListener('loadingStateUpdate', (event) => {
       this.datasetState = event.detail;
     });
 
@@ -227,11 +228,13 @@ export default class ConfigurerComponent extends HTMLElement {
     };
 
     this.startQuizButton.onclick = async () => {
+      this.disableAllControls();
       this.loading = true;
 
       const featureData = await this.featureData.promise;
       if (featureData === undefined) {
         this.loading = false;
+        this.enableAllControls();
         return;
       }
       /** @type {QuizInfo} */
@@ -246,6 +249,20 @@ export default class ConfigurerComponent extends HTMLElement {
       this.loading = false;
       this.viewState.view = 'quiz';
     };
+  }
+
+  disableAllControls() {
+    this.datasetLoader.disabled = true;
+    this.layerSelect.disabled = true;
+    this.matchPropertySelect.disabled = true;
+    this.startQuizButton.disabled = true;
+  }
+  
+  enableAllControls() {
+    this.datasetLoader.disabled = false;
+    this.layerSelect.disabled = false;
+    this.matchPropertySelect.disabled = false;
+    this.startQuizButton.disabled = false;
   }
 
   /**
