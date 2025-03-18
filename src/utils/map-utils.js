@@ -1,27 +1,11 @@
 import maplibregl from 'maplibre-gl';
 import polylabel from 'polylabel';
 
-/**
- * @import { Feature } from '../types.js'
- */
-
 const MIN_LNG = -180;
 const MAX_LNG = 180;
 const MIN_LAT = -90;
 const MAX_LAT = 90;
 const POLYLABEL_PRECISION = 0.000001;
-
-/**
- * Sets the ID on each given feature object.
- * @param {GeoJSON.Feature[]} features
- * @returns {Feature[]}
- */
-export function setFeatureIds(features) {
-  for (let i = 0; i < features.length; i += 1) {
-    features[i].id = i;
-  }
-  return features;
-}
 
 /**
  * Returns an array of all features contained in the given GeoJSON.

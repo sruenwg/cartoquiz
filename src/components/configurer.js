@@ -1,5 +1,5 @@
 import * as Gdal from '../utils/gdal.js';
-import { collectFeatures, setFeatureIds } from '../utils/map-utils.js';
+import { collectFeatures } from '../utils/map-utils.js';
 import { collectKeyValues, compareWithCallback, repopulateOptions } from '../utils/misc.js';
 
 /**
@@ -240,7 +240,7 @@ export default class ConfigurerComponent extends HTMLElement {
       /** @type {QuizInfo} */
       const quizInfo = {
         dataSource: this.datasetInfo.dataset.path,
-        features: setFeatureIds(featureData.features),
+        features: featureData.features,
         attribution: this.datasetInfo.attribution || undefined,
         collectedPropertyValues: featureData.collectedPropertyValues,
         matchProperty: this.matchProperty,

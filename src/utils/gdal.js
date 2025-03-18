@@ -48,14 +48,14 @@ export async function toGeoJson(vectorDataset, layer) {
   if (!hasProjectionInfo(layer)) {
     additionalOptions.push('-s_srs', 'EPSG:4326');
   }
-  const filePath = vectorDataset.info.driverShortName === 'GeoJSON'
-    ? vectorDataset.info.description
-    : await gdal.ogr2ogr(vectorDataset, [
-      '-of', 'GeoJSON',
-      '-t_srs', 'EPSG:4326',
-      ...additionalOptions,
-      layer.name,
-    ]);
+  const filePath = await gdal.ogr2ogr(vectorDataset, [
+    '-of', 'GeoJSON',
+    '-t_srs', 'EPSG:4326',
+    '-lco', 'rfc7946=yes',
+    '-lco', 'id_generate=yes',
+    ...additionalOptions,
+    layer.name,
+  ]);
   const fileBytes = await gdal.getFileBytes(filePath);
   const decoder = new TextDecoder();
   const jsonString = decoder.decode(fileBytes);
