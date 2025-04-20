@@ -81,7 +81,7 @@ input[type='url'] {
 }
 
 .map__canvas-overlay--backdrop {
-  backdrop-filter: brightness(1.12) blur(3px);
+  backdrop-filter: brightness(1.05) blur(3px);
 }
 
 .map__popup-table {

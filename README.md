@@ -101,7 +101,6 @@ This project was inspired by geography quizzes on [Sporcle](https://www.sporcle.
 
 - Rendering: [MapLibre GL JS](https://maplibre.org/)
 - Tiles: [Stadia Maps](https://stadiamaps.com/) (tile provider), [OpenMapTiles](https://openmaptiles.org/), [OpenStreetMap](https://www.openstreetmap.org/copyright)
-- Style: [Protomaps](https://protomaps.com/)
 
 ### Other
 

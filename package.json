@@ -3,7 +3,6 @@
   "private": true,
   "devDependencies": {
     "gdal3.js": "2.8.1",
-    "maplibre-gl": "^5",
-    "protomaps-themes-base": "3.1.0"
+    "maplibre-gl": "^5"
   }
 }

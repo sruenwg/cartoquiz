@@ -1,5 +1,5 @@
 import maplibregl from 'maplibre-gl';
-import { noLabels } from 'protomaps-themes-base';
+import { MAP_STYLE } from '../map-style.js';
 import {
   calcGeoJsonBounds,
   convertFeaturesToFeatureCollection,
@@ -14,26 +14,7 @@ import {
 const STATIC_ATTRIBUTIONS = [
   // Renderer
   '<a href="https://maplibre.org/" target="_blank">MapLibre</a>',
-  // Theme
-  '<a href="https://github.com/protomaps/basemaps" target="_blank">Protomaps</a>',
 ];
-/** @type {maplibregl.StyleSpecification} */
-const MAP_STYLE = {
-  version: 8,
-  layers: noLabels('openmaptiles', 'white'),
-  sources: {
-    'openmaptiles': {
-      type: 'vector',
-      scheme: 'xyz',
-      url: 'https://tiles.stadiamaps.com/data/openmaptiles.json',
-      attribution: `
-        &copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a>
-        &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a>
-        &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>
-      `,
-    },
-  },
-};
 const USER_SOURCE_ID = 'user-source';
 const HANDLERS = [
   'boxZoom',
